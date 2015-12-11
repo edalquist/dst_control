@@ -4,25 +4,33 @@
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 
 # Initialize our own variables:
-conf_dir=""
+CONF_DIR=""
 
-while getopts "h?d:" opt; do
-    case "$opt" in
-    h|\?)
-        show_help
-        exit 0
-        ;;
-    d)  conf_dir=""
-        ;;
-    esac
+#!/bin/bash
+ 
+while getopts ":d:" opt; do
+  case $opt in
+    d)
+      CONF_DIR=$OPTARG
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+  esac
 done
 
 shift $((OPTIND-1))
 
 [ "$1" = "--" ] && shift
 
+if [ "$CONF_DIR" = "" ]; then
+	echo "Missing -d <conf_dir>"
+	exit 1
+fi
+
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . $SCRIPT_DIR/dst_config
 
 cd $DST_HOME
-"$DST_HOME/dontstarve_dedicated_server_nullrenderer" -conf_dir $conf_dir -console
+"$DST_HOME/dontstarve_dedicated_server_nullrenderer" -conf_dir $CONF_DIR -console
