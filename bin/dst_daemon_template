@@ -1,9 +1,13 @@
-#!/bin/sh
+#!/bin/bash
 
 ##BEGIN INIT INFO
 # Provides:dst
 # Short-Description: Don't starve server
 # Description: Starts a Dont Starve Together server
+# Required-Start: $remote_fs $syslog
+# Required-Stop: $remote_fs $syslog
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
 ### END INIT INFO
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -18,23 +22,25 @@ PIDFILE="dst_$SERVER_TYPE_server.pid"
 cd "$DST_HOME"
 
 pid() {
-	return `pgrep -f \"$DST_BINARY.*$SERVER_TYPE\"`
+	echo `pgrep -f \"$DST_BINARY.*$SERVER_TYPE\"`
 }
 
 
 running() {
-	if [ -n pid() ]; then
+	local PID=$(pid)
+	if [ -n "$PID" ]; then
 		return 0
 	else
 		return 1
 	fi
+
 }
 
 start() {
 	if ! running; then
 		echo -n "Starting the $NAME server... "
 		start-stop-daemon --start --chuid $USER --user $USER --chdir $DST_HOME --exec "/usr/bin/tmux" -- tmux new-session -d -n $SCREENREF "./start_dst.sh -d DST_$SERVER_TYPE"
-		pid() > $PIDFILE
+		pid > $PIDFILE
 		if [ -s $PIDFILE ]; then
 			echo "Done"
 		else
