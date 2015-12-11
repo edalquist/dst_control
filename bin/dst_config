@@ -1,3 +1,4 @@
 export DST_HOME=/home/dst/server_dst/bin
+export DST_BINARY=dontstarve_dedicated_server_nullrenderer
 export SteamAppId=322330
 export SteamGameId=322330

@@ -17,3 +17,13 @@ mkdir server_dst
   +app_update 343050 validate \
   +quit
 ```
+
+TODO doc git checkout and starting each server to init
+
+# Configuruation
+```
+cd ~/.klei/DST_Overworld
+cp ~/citadel_backup/ServerFiles/DoNotStarveTogether/server_token.txt .
+
+
+```
