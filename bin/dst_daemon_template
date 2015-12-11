@@ -39,7 +39,7 @@ running() {
 start() {
 	if ! running; then
 		echo -n "Starting the $NAME server... "
-		start-stop-daemon --start --chuid $USER --user $USER --chdir $DST_HOME --exec "/usr/bin/tmux" -- tmux new-session -d -n $SCREENREF "./start_dst.sh -d DST_$SERVER_TYPE"
+		start-stop-daemon --start --chuid $USER --user $USER --chdir $DST_HOME --exec "/usr/bin/tmux" -- new-session -d -n $SCREENREF "./start_dst.sh -d DST_$SERVER_TYPE"
 		pid > $PIDFILE
 		if [ -s $PIDFILE ]; then
 			echo "Done"
