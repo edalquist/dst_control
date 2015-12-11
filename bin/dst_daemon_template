@@ -41,6 +41,7 @@ start() {
 		echo -n "Starting the $NAME server... "
 		start-stop-daemon --start --chuid $USER --user $USER --chdir $DST_HOME --exec "/usr/bin/tmux" -- new-session -d -n $SCREENREF "./start_dst.sh -d DST_$SERVER_TYPE"
 		pid > $PIDFILE
+		echo "PID File: $PIDFILE"
 		if [ -s $PIDFILE ]; then
 			echo "Done"
 		else
