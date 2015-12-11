@@ -1,3 +1,3 @@
-export DST_HOME=/home/dst/server_dst
+export DST_HOME=/home/dst/server_dst/bin
 export SteamAppId=322330
 export SteamGameId=322330
