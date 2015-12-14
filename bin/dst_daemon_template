@@ -119,20 +119,20 @@ dst_status() {
 
 case "$1" in
     start)
-        exile_start
+        dst_start
     ;;
 
     stop)
-        exile_stop
+        dst_stop
     ;;
 
     restart)
-        exile_stop
-        exile_start
+        dst_stop
+        dst_start
     ;;
 
     status)
-        exile_status
+        dst_status
     ;;
 
     attach)
