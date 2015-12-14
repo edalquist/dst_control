@@ -54,33 +54,33 @@ fi
 dst_start() {
     if [ ! -f ${DST_HOME}/${DST_BINARY} ]
     then
-        echo "${DST_BINARY} not found! Stopping..."
+        echo "${DST_HOME}/${DST_BINARY} not found! Stopping..."
         sleep 1
         exit
     else
         if  [ ${RUNNING} -eq 1 ];
         then
-            echo "${DST_BINARY} is already running!"
+            echo "${DESCRIPTION} is already running!"
         else
-            echo "Setting Permissions..."
+            echo "Setting Permissions ..."
             #chmod -R 0755 $DST_HOME
             chown -R $USERNAME:$USERNAME /home/$USERNAME
-            echo "Starting ${DST_BINARY}..."
+            echo "Starting ${DESCRIPTION} ..."
             cd $DST_HOME
             if [ "${2}" == "-silent" ]; then
                 su ${USERNAME} -c "${TMUX} new-session -d -s ${TMUX_SESSION} \"./${DST_BINARY} ${OPTIONS} > ${LOG_DIR}/console.log 2> ${LOG_DIR}/errors.log\""
             else
                 su ${USERNAME} -c "${TMUX} new-session -d -s ${TMUX_SESSION} \"./${DST_BINARY} ${OPTIONS} 2> ${LOG_DIR}/errors.log | tee ${LOG_DIR}/console.log\""
             fi
-            echo "Searching Process ${DST_BINARY}..."
-            sleep 8
-            PID=$(pgrep -u $USERNAME -f "${DST_BINARY} ${OPTIONS}")
-            if [ -n $PID ]; then
+            echo "Waiting for ${DESCRIPTION} ..."
+            sleep 5
+            PID=$(pgrep -u $USERNAME -f "^./${DST_BINARY} ${OPTIONS}$")
+            if [[ -n $PID ]]; then
                 echo "${PID}" > "${PIDFILE}"
-                echo "${DST_BINARY} ${SERVER_TYPE} is now running."
+                echo "${DESCRIPTION} is now running."
                 RUNNING=1
             else
-                echo "Error! Could not start ${DST_BINARY} ${SERVER_TYPE}!"
+                echo "Error! Could not start ${DESCRIPTION}!"
                 RUNNING=0
             fi
         fi
@@ -90,7 +90,7 @@ dst_start() {
 dst_stop() {
     if [ ${RUNNING} -eq 1 ];
     then
-        echo "Stopping ${DST_BINARY}..."
+        echo "Stopping ${DESCRIPTION}..."
 
         # Send save and shutdown
         su $USERNAME -c "$TMUX send-keys -t $TMUX_SESSION \"c_save()\" C-m \"c_shutdown()\" C-m"
@@ -98,8 +98,10 @@ dst_stop() {
         # TODO what if this hangs?
         # Wait for the tmux session to end
         su $USERNAME -c "$TMUX wait-for $TMUX_SESSION"
+
+        echo "${DESCRIPTION} is stopped."
     else
-        echo "${DST_BINARY} is stopped."
+        echo "${DESCRIPTION} is not running."
     fi
 
     if [ -f ${PIDFILE} ]; then
@@ -110,9 +112,9 @@ dst_stop() {
 dst_status() {
     if [ -f ${PIDFILE} ]; then
         PID=$(cat ${PIDFILE})
-        echo "Server is running (PID=${PID})..."
+        echo "${DESCRIPTION} is running (PID=${PID})..."
     else
-        echo "Server not running..."
+        echo "${DESCRIPTION} not running..."
         exit 0
     fi
 }
