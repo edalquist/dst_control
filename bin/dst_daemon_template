@@ -77,7 +77,7 @@ dst_start() {
             PID=$(pgrep -u $USERNAME -f "^./${DST_BINARY} ${OPTIONS}$")
             if [[ -n $PID ]]; then
                 echo "${PID}" > "${PIDFILE}"
-                echo "${DESCRIPTION} is now running."
+                echo "${DESCRIPTION} is now running (PID=${PID})"
                 RUNNING=1
             else
                 echo "Error! Could not start ${DESCRIPTION}!"
@@ -112,9 +112,9 @@ dst_stop() {
 dst_status() {
     if [ -f ${PIDFILE} ]; then
         PID=$(cat ${PIDFILE})
-        echo "${DESCRIPTION} is running (PID=${PID})..."
+        echo "${DESCRIPTION} is running (PID=${PID})"
     else
-        echo "${DESCRIPTION} not running..."
+        echo "${DESCRIPTION} not running"
         exit 0
     fi
 }
