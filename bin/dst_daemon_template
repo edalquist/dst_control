@@ -1,94 +1,148 @@
 #!/bin/bash
-
-##BEGIN INIT INFO
-# Provides:dst
-# Short-Description: Don't starve server
-# Description: Starts a Dont Starve Together server
-# Required-Start: $remote_fs $syslog
-# Required-Stop: $remote_fs $syslog
-# Default-Start: 2 3 4 5
-# Default-Stop: 0 1 6
+### BEGIN INIT INFO
+# Provides:       dst-overworld
+# Required-Start: $remote_fs $network
+# Required-Stop:  $remote_fs $network
+# Default-Start:    2 3 4 5
+# Default-Stop:     0 1 6
+# Description:      Don't Starve Together init.d Script by Flodding
 ### END INIT INFO
+
+#=======================================================================
+#========               CONFIGURATION PARAMETERS                ========
+#======== MUST BE EDITED MANUALLY TO FIT YOUR SYSTEM PARAMETERS ========
+#=======================================================================
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . $SCRIPT_DIR/dst_config
 
-SERVER_TYPE="Overworld"
-NAME="Dont Starve Together $SERVER_TYPE"
-USER="dst"
-SCREENREF="DST_$SERVER_TYPE"
-PIDFILE="dst_$SERVER_TYPE_server.pid"
+USERNAME="dst" # This user *MUST* exist on the system.
+SERVER_TYPE="${DST_OVERWORLD}" # Change this for Overworld vs Cave
+LOG_DIR="${DST_CONFIG_BASE}/${SERVER_TYPE}/logs"
+PIDFILE="${DST_CONFIG_BASE}/${SERVER_TYPE}/server.pid"
+DESCRIPTION="Don't Starve Together ${SERVER_TYPE}"
 
-cd "$DST_HOME"
+OPTIONS="-conf_dir ${SERVER_TYPE} -console"
 
-pid() {
-	echo `pgrep -f \"$DST_BINARY.*$SERVER_TYPE\"`
+# Check if server is running
+if [ -f ${PIDFILE} ]; then
+  PID=$(cat ${PIDFILE} > /dev/null)
+  if [ -e /proc/$PID ]; then
+    RUNNING=1
+  else
+    RUNNING=0
+  fi
+else
+  RUNNING=0
+fi
+
+TMUX_SESSION="${SERVER_TYPE}" # You can use any name here.
+
+#=======================================================================
+# CONFIG END
+#=======================================================================
+
+TMUX=$(which tmux)
+
+[ ! -x "$TMUX" ] && echo "Tmux not found" >&2 && exit 1
+
+if [ ! -d "$LOG_DIR" ]; then
+    echo "${LOG_DIR} not found. Creating..."
+    mkdir -p $LOG_DIR
+fi
+
+dst_start() {
+    if [ ! -f ${DST_HOME}/${DST_BINARY} ]
+    then
+        echo "${DST_BINARY} not found! Stopping..."
+        sleep 1
+        exit
+    else
+        if  [ ${RUNNING} -eq 1 ];
+        then
+            echo "${DST_BINARY} is already running!"
+        else
+            echo "Setting Permissions..."
+            #chmod -R 0755 $DST_HOME
+            chown -R $USERNAME:$USERNAME /home/$USERNAME
+            echo "Starting ${DST_BINARY}..."
+            cd $DST_HOME
+            if [ "${2}" == "-silent" ]; then
+                su ${USERNAME} -c "${TMUX} new-session -d -s ${TMUX_SESSION} \"./${DST_BINARY} ${OPTIONS} > ${LOG_DIR}/console.log 2> ${LOG_DIR}/errors.log\""
+            else
+                su ${USERNAME} -c "${TMUX} new-session -d -s ${TMUX_SESSION} \"./${DST_BINARY} ${OPTIONS} 2> ${LOG_DIR}/errors.log | tee ${LOG_DIR}/console.log\""
+            fi
+            echo "Searching Process ${DST_BINARY}..."
+            sleep 8
+            PID=$(pgrep -u $USERNAME -f "${DST_BINARY} ${OPTIONS}")
+            if [ -n $PID ]; then
+                echo "${PID}" > "${PIDFILE}"
+                echo "${DST_BINARY} ${SERVER_TYPE} is now running."
+                RUNNING=1
+            else
+                echo "Error! Could not start ${DST_BINARY} ${SERVER_TYPE}!"
+                RUNNING=0
+            fi
+        fi
+    fi
 }
 
+dst_stop() {
+    if [ ${RUNNING} -eq 1 ];
+    then
+        echo "Stopping ${DST_BINARY}..."
 
-running() {
-	local PID=$(pid)
-	if [ -n "$PID" ]; then
-		return 0
-	else
-		return 1
-	fi
+        # Send save and shutdown
+        su $USERNAME -c "$TMUX send-keys -t $TMUX_SESSION \"c_save()\" C-m \"c_shutdown()\" C-m"
 
+        # TODO what if this hangs?
+        # Wait for the tmux session to end
+        su $USERNAME -c "$TMUX wait-for $TMUX_SESSION"
+    else
+        echo "${DST_BINARY} is stopped."
+    fi
+
+    if [ -f ${PIDFILE} ]; then
+        rm -f ${PIDFILE}
+    fi
 }
 
-start() {
-	if ! running; then
-		echo -n "Starting the $NAME server... "
-		start-stop-daemon --start --chuid $USER --user $USER --chdir $DST_HOME --exec "/usr/bin/tmux" -- new-session -d -n $SCREENREF "./start_dst.sh -d DST_$SERVER_TYPE"
-		pid > $PIDFILE
-		echo "PID File: $PIDFILE"
-		if [ -s $PIDFILE ]; then
-			echo "Done"
-		else
-			echo "Failed"
-			rm $PIDFILE
-		fi
-	else
-		echo "The $NAME server is already started."
-	fi
-}
-
-stop() {
-	if running; then
-		echo -n "Stopping the $NAME server... "
-		#kill `cat $PIDFILE`
-		/usr/bin/tmux send-keys -t $SCREENREF "c_save()" C-m "c_shutdown()" C-m
-		while running; do
-			sleep 1
-		done
-		rm $PIDFILE
-		echo "Done"
-	else
-		echo "The $NAME server is already stopped."
-	fi
+dst_status() {
+    if [ -f ${PIDFILE} ]; then
+        PID=$(cat ${PIDFILE})
+        echo "Server is running (PID=${PID})..."
+    else
+        echo "Server not running..."
+        exit 0
+    fi
 }
 
 case "$1" in
-	start)
-		start
-	;;
-	stop)
-		stop
-	;;
-	restart)
-		stop
-		start
-	;;
-	status)
-		if running; then
-			echo "The $NAME server is started."
-		else
-			echo "The $NAME server is stopped."
-		fi
-	;;
-	*)
-		echo "Usage: $0 (start|stop|restart|status)"
-		exit 1
+    start)
+        exile_start
+    ;;
+
+    stop)
+        exile_stop
+    ;;
+
+    restart)
+        exile_stop
+        exile_start
+    ;;
+
+    status)
+        exile_status
+    ;;
+
+    attach)
+        su $USERNAME -c "$TMUX at -t $TMUX_SESSION"
+    ;;
+
+    *)
+        echo "$0 (start|stop|restart|status|attach)"
+        exit 1
+    ;;
 esac
 
 exit 0

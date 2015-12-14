@@ -1,4 +1,8 @@
 export DST_HOME=/home/dst/server_dst/bin
 export DST_BINARY=dontstarve_dedicated_server_nullrenderer
+export DST_OVERWORLD=DST_Overworld
+export DST_CAVE=DST_Cave
+export DST_CONFIG_BASE=/home/dst/.klei
+
 export SteamAppId=322330
 export SteamGameId=322330
